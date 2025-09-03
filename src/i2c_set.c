@@ -19,18 +19,20 @@ void i2c_write_reg(int addr, uint8_t reg, uint8_t* data, int count, BOOL bRead)
 	out[1] = reg;
 	memcpy(&out[2], data, count);
 	BOOL ret = CH347StreamI2C(g_uIndex, count+2, out, 0, NULL);
-	if(!ret) {
+	if (!ret) {
 		printf("CH347StreamI2C write failed\n");
 		return;
 	}
 	if (bRead) {
-		Sleep(500);
-		ret = CH347StreamI2C(g_uIndex, count+2, out, count, in);
-		if(!ret) {
+		Sleep(50);
+		ret = CH347StreamI2C(g_uIndex, 2, out, count, in);
+		if (!ret) {
 			printf("CH347StreamI2C read failed\n");
 		}
 		if (memcmp(&out[2], &in[0], count) != 0) {
-			printf("i2c set failed, Verification error.\n");
+			printf("Verification error.\n");
+		} else {
+			printf("Verification successfully.\n");
 		}
 	}
 }
@@ -43,6 +45,7 @@ int main(int argc, char *argv[])
   int mode = BYTE_MODE;
   BOOL read_back = FALSE;
   uint8_t data[128] = {0};
+  uint16_t word_tmp = 0;
   int index = 0;
   if (argc >= 4) {
   	g_uIndex = atoi(argv[1]);
@@ -69,14 +72,17 @@ int main(int argc, char *argv[])
 		}
 		continue;
 	}
-	sscanf(argv[i], "%x", &data[index]);
 	switch (mode)
 	{
 	case BYTE_MODE:
 	case BLOCK_MODE:
+	  sscanf(argv[i], "%x", &data[index]);
 	  index++;
 	break;
 	case WORD_MODE:
+	  sscanf(argv[i], "%hx", &word_tmp);
+	  data[index] = (word_tmp >> 8) & 0xFF; 
+      data[index+1] = word_tmp & 0xFF;
 	  index+=2;
 	break;
 	default:
